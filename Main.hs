@@ -14,12 +14,12 @@ data Expr = Atom Symbol
 --   atom
 
 car :: Expr -> Expr
-car (Atom a) = error "`car` is undefined for atomic arguments"
-car (Cons a _)    = a
+car (Atom a)   = error "`car` is undefined for atomic arguments"
+car (Cons a _) = a
 
 cdr :: Expr -> Expr
-cdr (Atom a) = error "`cdr` is undefined for atomic arguments"
-cdr (Cons _ b)    = b
+cdr (Atom a)   = error "`cdr` is undefined for atomic arguments"
+cdr (Cons _ b) = b
 
 cons :: Expr -> Expr -> Expr
 cons = Cons
