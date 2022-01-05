@@ -9,5 +9,6 @@ Prerequisites:
 
 ```sh
 $ git clone https://github.com/jdpmk/minilisp
+$ cd minilisp
 $ ghci Main.hs # To launch into an interactive REPL
 ```
