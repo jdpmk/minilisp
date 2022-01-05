@@ -4,7 +4,7 @@
 
 ## Setup
 
-Prerequisities:
+Prerequisites:
 - [Glasgow Haskell Compiler (GHC)](https://www.haskell.org/ghc/) (with GHCi REPL)
 
 ```sh
