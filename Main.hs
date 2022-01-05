@@ -1,4 +1,5 @@
-data Symbol = String String
+data Symbol = Identifier String
+            | String String
             | Integer Int
             | Double Double
             deriving (Show, Eq)
@@ -39,11 +40,7 @@ cons :: Expr -> Expr -> Expr
 cons = Cons
 
 eq :: Expr -> Expr -> Expr
-eq Nil          Nil          = T
-eq T            T            = T
-eq (Atom a)     (Atom b)     = if a == b then T else Nil
-eq (Function f) (Function g) = if f == g then T else Nil
-eq _            _            = Nil
+eq a b = if a == b then T else Nil
 
 atom :: Expr -> Expr
 atom (Cons _ _) = Nil
@@ -96,10 +93,11 @@ eval e a
         _                -> apply (car e) (evlis (cdr e) a) a
   | otherwise         = apply (car e) (evlis (cdr e) a) a
 
+evalquote :: Expr -> Expr -> Expr
 evalquote fn x = apply fn x Nil
 
 -- Test Cases
 --   To run, paste `Input` expression into REPL. Match output with `Result` expression.
 
--- Input: evalquote (Cons (Function LAMBDA) (Cons (Cons (Atom (String "X")) (Cons (Atom (String "Y")) Nil)) (Cons (Cons (Function CONS) (Cons (Cons (Function CAR) (Cons (Atom (String "X")) Nil)) (Cons (Atom (String "Y")) Nil))) Nil))) (Cons (Cons (Atom (String "A")) (Cons (Atom (String "B")) Nil)) (Cons (Cons (Atom (String "C")) (Cons (Atom (String "D")) Nil)) Nil))
--- Result: Cons (Atom (String "A")) (Cons (Atom (String "C")) (Cons (Atom (String "D")) Nil))
+-- Input: evalquote (Cons (Function LAMBDA) (Cons (Cons (Atom (Identifier "X")) (Cons (Atom (Identifier "Y")) Nil)) (Cons (Cons (Function CONS) (Cons (Cons (Function CAR) (Cons (Atom (Identifier "X")) Nil)) (Cons (Atom (Identifier "Y")) Nil))) Nil))) (Cons (Cons (Atom (Identifier "A")) (Cons (Atom (Identifier "B")) Nil)) (Cons (Cons (Atom (Identifier "C")) (Cons (Atom (Identifier "D")) Nil)) Nil))
+-- Result: Cons (Atom (Identifier "A")) (Cons (Atom (Identifier "C")) (Cons (Atom (Identifier "D")) Nil))
