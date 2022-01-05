@@ -1,6 +1,6 @@
 data Symbol = String String
             | Integer Int
-            | Float Double
+            | Double Double
             deriving (Show, Eq)
 
 data Expr = Nil
@@ -60,12 +60,12 @@ pairlis x y a
 
 assoc :: Expr -> Expr -> Expr
 assoc x a
-  | eq (car (car a)) x == T = car a
+  | eq (car $ car a) x == T = car a
   | otherwise               = assoc x (cdr a)
 
 evcon :: Expr -> Expr -> Expr
 evcon c a
-  | null' (eval (car (car c)) a) == Nil = eval ((car . cdr . car) c) a
+  | null' (eval (car $ car c) a) == Nil = eval (car $ cdr $ car c) a
   | otherwise                           = evcon (cdr c) a
 
 evlis :: Expr -> Expr -> Expr
@@ -77,22 +77,21 @@ apply :: Expr -> Expr -> Expr -> Expr
 apply fn x a
   | atom fn == T =
       case fn of
-        (Function CAR)  -> car (car x)
-        (Function CDR)  -> cdr (car x)
-        (Function CONS) -> cons (car x) ((car . cdr) x)
+        (Function CAR)  -> car $ car x
+        (Function CDR)  -> cdr $ car x
+        (Function CONS) -> cons (car x) (car $ cdr x)
         (Function ATOM) -> atom (car x)
-        (Function EQQ)  -> eq (car x) ((car . cdr) x)
+        (Function EQQ)  -> eq (car x) (car $ cdr x)
         _               -> apply (eval fn a) x a
-  | eq (car fn) (Function LAMBDA) == T = eval ((car. cdr . cdr) fn) (pairlis ((car . cdr) fn) x a)
-  | eq (car fn) (Function LABEL)  == T = apply ((car . cdr . cdr) fn) x (cons (cons ((car . cdr) fn) ((car . cdr . cdr) fn)) a)
-  | otherwise                          = undefined
+  | eq (car fn) (Function LAMBDA) == T = eval (car $ cdr $ cdr fn) (pairlis (car $ cdr fn) x a)
+  | eq (car fn) (Function LABEL)  == T = apply (car $ cdr $ cdr fn) x (cons (cons (car $ cdr fn) (car $ cdr $ cdr fn)) a)
 
 eval :: Expr -> Expr -> Expr
 eval e a
   | atom e       == T = cdr (assoc e a)
   | atom (car e) == T =
       case car e of
-        (Function QUOTE) -> car (cdr e)
+        (Function QUOTE) -> car $ cdr e
         (Function COND)  -> evcon (cdr e) a
         _                -> apply (car e) (evlis (cdr e) a) a
   | otherwise         = apply (car e) (evlis (cdr e) a) a
@@ -100,6 +99,7 @@ eval e a
 evalquote fn x = apply fn x Nil
 
 -- Test Cases
+--   To run, paste `Input` expression into REPL. Match output with `Result` expression.
 
 -- Input: evalquote (Cons (Function LAMBDA) (Cons (Cons (Atom (String "X")) (Cons (Atom (String "Y")) Nil)) (Cons (Cons (Function CONS) (Cons (Cons (Function CAR) (Cons (Atom (String "X")) Nil)) (Cons (Atom (String "Y")) Nil))) Nil))) (Cons (Cons (Atom (String "A")) (Cons (Atom (String "B")) Nil)) (Cons (Cons (Atom (String "C")) (Cons (Atom (String "D")) Nil)) Nil))
 -- Result: Cons (Atom (String "A")) (Cons (Atom (String "C")) (Cons (Atom (String "D")) Nil))
