@@ -1,42 +1,47 @@
 module Parser where
 
-data Error i = EOF
-             | Unexpected i
-             | Empty
-             deriving (Show, Eq)
+import Control.Applicative (Alternative (..))
 
-newtype Parser i a = Parser
-  { runParser :: [i] -> Either [Error i] (a, [i])
-  }
+newtype Parser a = Parser { parse :: String -> Maybe (a, String) }
 
-instance Functor (Parser i) where
-  fmap f (Parser parse) = Parser $ \input ->
-    case parse input of
-      Left error    -> Left error
-      Right (x, xs) -> Right (f x, xs)
+instance Functor Parser where
+  fmap f (Parser p) = Parser $ \input -> do
+    (parsed, rest) <- p input
+    pure (f parsed, rest)
 
-instance Applicative (Parser i) where
-  pure x = Parser $ \input -> Right (x, input)
+instance Applicative Parser where
+  pure v = Parser $ \input -> Just (v, input)
 
   Parser f <*> Parser p = Parser $ \input -> do
-    (f', xs) <- f input
-    (x, xs') <- p xs
-    pure (f' x, xs')
+    (f', rest)      <- f input
+    (parsed, rest') <- p input
+    pure (f' parsed, rest')
 
-instance Monad (Parser i) where
-  return = pure
+instance Monad Parser where
+  Parser p >>= f = Parser $ \input -> do
+    (parsed, rest) <- p input
+    parse (f parsed) rest
 
-  (Parser p) >>= f = Parser $ \input -> do
-    (x, xs) <- p input
-    runParser (f x) xs
+instance Alternative Parser where
+  empty = Parser $ \input -> Nothing
 
-satisfy :: (i -> Bool) -> Parser i i
-satisfy pred = Parser $ \input ->
+  Parser l <|> Parser r = Parser $ \input ->
+    case l input of
+      Nothing ->
+        case r input of
+          Nothing -> Nothing
+          Just (parsed, rest) -> Just (parsed, rest)
+      Just (parsed, rest) -> Just (parsed, rest)
+
+char :: Char -> Parser Char
+char c = Parser $ \input ->
   case input of
-    [] -> Left [EOF]
-    x:xs
-      | pred x    -> Right (x, xs)
-      | otherwise -> Left [Unexpected x]
+    (c':cs) -> if c == c' then Just (c, cs) else Nothing
+    ""      -> Nothing
 
-char :: Eq a => a -> Parser a a
-char c = satisfy (== c)
+string :: String -> Parser String
+string ""       = Parser $ \input -> Just ("", input)
+string s@(c:cs) = Parser $ \input -> do
+  (_, rest)  <- parse (char c) input
+  (_, rest') <- parse (string cs) rest
+  pure (s, rest')
