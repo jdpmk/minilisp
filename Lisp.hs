@@ -3,7 +3,6 @@ module Lisp where
 data Symbol = Identifier String
             | String String
             | Integer Int
-            | Double Double
             deriving (Show, Eq)
 
 data Expr = Nil
