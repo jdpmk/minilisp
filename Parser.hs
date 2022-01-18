@@ -38,12 +38,6 @@ anyChar = Parser $ \input ->
     (c:cs) -> Just (c, cs)
     ""     -> Nothing
 
-char :: Char -> Parser Char
-char c = anyChar `satisfying` (== c)
-
-string :: String -> Parser String
-string = traverse char
-
 satisfying :: Parser a -> (a -> Bool) -> Parser a
 satisfying (Parser p) pred = Parser $ \input -> do
   (parsed, rest) <- p input
@@ -55,57 +49,71 @@ failEmpty (Parser p) = Parser $ \input -> do
   (parsed, rest) <- p input
   if null parsed then Nothing else Just (parsed, rest)
 
-lispIdentifier :: Parser Symbol
-lispIdentifier = Identifier <$> (Parser $ \input -> do
-  (parsed, rest)   <- parse (anyChar `satisfying` isAlpha) input
-  (parsed', rest') <- parse (many anyChar) rest
-  pure (parsed:parsed', rest'))
+char :: Char -> Parser Char
+char c = anyChar `satisfying` (== c)
 
-lispString :: Parser Symbol
-lispString = String <$> (char '"' *> (many $ anyChar `satisfying` ((/=) '"')) <* char '"')
+string :: String -> Parser String
+string = traverse char
 
-lispInteger :: Parser Symbol
-lispInteger = (Integer . read) <$> failEmpty (many $ anyChar `satisfying` isDigit)
+whitespace :: Parser String
+whitespace = many $ anyChar `satisfying` (`elem` " \t\n")
 
-lispCar :: Parser Function
-lispCar = const CAR <$> string "car"
+sep :: Parser a -> Parser b -> Parser [b]
+sep delimiter element = (:) <$> element <*> many (delimiter *> element) <|> pure []
 
-lispCdr :: Parser Function
-lispCdr = const CDR <$> string "cdr"
+lispIdentifier :: Parser Expr
+lispIdentifier = (Atom . Identifier) <$> identifier
+  where
+    identifier = Parser $ \input -> do
+      (parsed, rest)   <- parse (anyChar `satisfying` isAlpha) input
+      (parsed', rest') <- parse (many $ anyChar `satisfying` (`notElem` " \t\n()")) rest
+      pure (parsed:parsed', rest')
 
-lispCons :: Parser Function
-lispCons = const CONS <$> string "cons"
+lispString :: Parser Expr
+lispString = (Atom . String) <$> (char '"' *> (many $ anyChar `satisfying` ((/=) '"')) <* char '"')
 
-lispEqq :: Parser Function
-lispEqq = const EQQ <$> string "eq"
+lispInteger :: Parser Expr
+lispInteger = (Atom . Integer . read) <$> failEmpty (many $ anyChar `satisfying` isDigit)
 
-lispAtom :: Parser Function
-lispAtom = const ATOM <$> string "atom"
+lispNil :: Parser Expr
+lispNil = const (Atom Nil) <$> string "nil"
 
-lispLambda :: Parser Function
-lispLambda = const LAMBDA <$> string "lambda"
+lispT :: Parser Expr
+lispT = const (Atom T) <$> string "t"
 
-lispLabel :: Parser Function
-lispLabel = const LABEL <$> string "label"
+lispKeyword :: String -> Parser Expr
+lispKeyword s = Atom <$> Identifier <$> string s
 
-lispQuote :: Parser Function
-lispQuote = const QUOTE <$> string "quote"
+lispCar    = lispKeyword "car"
+lispCdr    = lispKeyword "cdr"
+lispCons   = lispKeyword "cons"
+lispAtom   = lispKeyword "atom"
+lispEqq    = lispKeyword "eq"
+lispLambda = lispKeyword "lambda"
+lispLabel  = lispKeyword "label"
+lispQuote  = lispKeyword "quote"
+lispCond   = lispKeyword "cond"
 
-lispCond :: Parser Function
-lispCond = const COND <$> string "cond"
-
-lispFunction :: Parser Function
-lispFunction = lispCar
+lispKeywords :: Parser Expr
+lispKeywords = lispCar
                <|> lispCdr
                <|> lispCons
-               <|> lispEqq
                <|> lispAtom
+               <|> lispEqq
                <|> lispLambda
                <|> lispLabel
                <|> lispQuote
                <|> lispCond
 
-lispSymbol :: Parser Symbol
-lispSymbol = lispString
+lispAtomic :: Parser Expr
+lispAtomic = lispString
              <|> lispInteger
+             <|> lispKeywords
              <|> lispIdentifier
+
+lispExpr :: Parser Expr
+lispExpr = lispAtomic
+           <|> buildCons <$> (char '(' *> whitespace *> (sep whitespace (lispAtomic <|> lispExpr)) <* whitespace <* char ')')
+  where
+    buildCons []     = Atom Nil
+    buildCons (x:xs) = Cons x (buildCons xs)
