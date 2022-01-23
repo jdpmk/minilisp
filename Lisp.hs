@@ -58,8 +58,8 @@ assoc x a
 
 evcon :: Expr -> Expr -> Expr
 evcon c a
-  | null' (eval (car $ car c) a) == Atom T = eval (car $ cdr $ car c) a
-  | otherwise                              = evcon (cdr c) a
+  | null' (eval (car $ car c) a) == Atom Nil = eval (car $ cdr $ car c) a
+  | otherwise                                = evcon (cdr c) a
 
 evlis :: Expr -> Expr -> Expr
 evlis m a
