@@ -119,3 +119,9 @@ lispExpr = lispAtomic
   where
     buildCons []     = Atom Nil
     buildCons (x:xs) = Cons x (buildCons xs)
+
+extract :: Maybe (Expr, String) -> Expr
+extract = fst . maybe (Atom Nil, "") id
+
+parseAndExtract :: String -> Expr
+parseAndExtract = extract . parse lispExpr
