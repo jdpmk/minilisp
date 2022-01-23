@@ -15,11 +15,11 @@ cons :: Expr -> Expr -> Expr
 cons = Cons
 
 car :: Expr -> Expr
-car (Atom _)   = error "`car` is undefined for atomic arguments"
+car (Atom _)   = Atom Nil
 car (Cons a _) = a
 
 cdr :: Expr -> Expr
-cdr (Atom _)   = error "`cdr` is undefined for atomic arguments"
+cdr (Atom _)   = Atom Nil
 cdr (Cons _ b) = b
 
 eq :: Expr -> Expr -> Expr
@@ -41,6 +41,7 @@ pairlis x y a
 
 assoc :: Expr -> Expr -> Expr
 assoc x a
+  | null' a            == Atom T = error "Symbol is not defined"
   | eq (car $ car a) x == Atom T = car a
   | otherwise                    = assoc x (cdr a)
 
@@ -57,26 +58,28 @@ evlis m a
 apply :: Expr -> Expr -> Expr -> Expr
 apply fn x a
   | atom fn == Atom T =
-      case fn of
-        (Atom (Identifier "car"))  -> car $ car x
-        (Atom (Identifier "cdr"))  -> cdr $ car x
-        (Atom (Identifier "cons")) -> cons (car x) (car $ cdr x)
-        (Atom (Identifier "atom")) -> atom (car x)
-        (Atom (Identifier "eq"))  -> eq (car x) (car $ cdr x)
-        _                          -> apply (eval fn a) x a
+    case fn of
+      (Atom (Identifier "car"))  -> car $ car x
+      (Atom (Identifier "cdr"))  -> cdr $ car x
+      (Atom (Identifier "cons")) -> cons (car x) (car $ cdr x)
+      (Atom (Identifier "atom")) -> atom (car x)
+      (Atom (Identifier "eq"))   -> eq (car x) (car $ cdr x)
+      _                          -> apply (eval fn a) x a
   | eq (car fn) (Atom (Identifier "lambda")) == Atom T =
-      eval (car $ cdr $ cdr fn) (pairlis (car $ cdr fn) x a)
+    eval (car $ cdr $ cdr fn) (pairlis (car $ cdr fn) x a)
   | eq (car fn) (Atom (Identifier "label"))  == Atom T =
-      apply (car $ cdr $ cdr fn) x (cons (cons (car $ cdr fn) (car $ cdr $ cdr fn)) a)
+    apply (car $ cdr $ cdr fn) x (cons (cons (car $ cdr fn) (car $ cdr $ cdr fn)) a)
+  | otherwise = eval (Cons fn x) a
 
 eval :: Expr -> Expr -> Expr
 eval e a
   | atom e       == Atom T = cdr (assoc e a)
   | atom (car e) == Atom T =
-      case car e of
-        (Atom (Identifier "quote")) -> car $ cdr e
-        (Atom (Identifier "cond"))  -> evcon (cdr e) a
-        _                           -> apply (car e) (evlis (cdr e) a) a
+    case car e of
+      (Atom (Identifier "quote")) -> car $ cdr e
+      (Atom (Identifier "cond"))  -> evcon (cdr e) a
+      _                           -> apply (car e) (evlis (cdr e) a) a
+  | otherwise              = apply (car e) (evlis (cdr e) a) a
 
 evalquote :: Expr -> Expr -> Expr
 evalquote fn x = apply fn x (Atom Nil)
