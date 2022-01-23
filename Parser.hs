@@ -43,6 +43,10 @@ failEmpty (Parser p) = Parser $ \input -> do
   (parsed, rest) <- p input
   if null parsed then Nothing else Just (parsed, rest)
 
+implicitQuote :: Parser Expr -> Parser Expr
+implicitQuote =
+  (<$>) (Cons (Atom (Identifier "quote")) . (flip Cons (Atom Nil)))
+
 anyChar :: Parser Char
 anyChar = Parser $ \input ->
   case input of
@@ -91,10 +95,7 @@ lispAtom   = lispKeyword "atom"
 lispEq     = lispKeyword "eq"
 lispLambda = lispKeyword "lambda"
 lispLabel  = lispKeyword "label"
-lispQuote  = lispKeyword "quote"
-             <|> (Cons (Atom (Identifier "quote"))
-                   <$> (flip Cons (Atom Nil))
-                   <$> (char '\'' *> lispExpr))
+lispQuote  = lispKeyword "quote" <|> implicitQuote (char '\'' *> lispExpr)
 lispCond   = lispKeyword "cond"
 
 lispKeywords :: Parser Expr
@@ -109,10 +110,10 @@ lispKeywords = lispCar
                <|> lispCond
 
 lispAtomic :: Parser Expr
-lispAtomic = lispNil
-             <|> lispT
-             <|> lispString
-             <|> lispInteger
+lispAtomic = implicitQuote lispNil
+             <|> implicitQuote lispT
+             <|> implicitQuote lispString
+             <|> implicitQuote lispInteger
              <|> lispKeywords
              <|> lispIdentifier
 
