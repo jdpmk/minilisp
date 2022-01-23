@@ -92,6 +92,9 @@ lispEq     = lispKeyword "eq"
 lispLambda = lispKeyword "lambda"
 lispLabel  = lispKeyword "label"
 lispQuote  = lispKeyword "quote"
+             <|> (Cons (Atom (Identifier "quote"))
+                   <$> (flip Cons (Atom Nil))
+                   <$> (char '\'' *> lispExpr))
 lispCond   = lispKeyword "cond"
 
 lispKeywords :: Parser Expr
