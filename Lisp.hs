@@ -5,11 +5,22 @@ data Atom = Nil
           | Identifier String
           | String String
           | Integer Int
-          deriving (Show, Eq)
+          deriving (Eq)
+
+instance Show Atom where
+  show Nil            = "nil"
+  show T              = "t"
+  show (Identifier s) = s
+  show (String s)     = "\"" ++ s ++ "\""
+  show (Integer i)    = show i
 
 data Expr = Atom Atom
           | Cons Expr Expr
-          deriving (Show, Eq)
+          deriving (Eq)
+
+instance Show Expr where
+  show (Atom a)   = show a
+  show (Cons a b) = "(" ++ show a ++ " " ++ show b ++ ")"
 
 cons :: Expr -> Expr -> Expr
 cons = Cons
