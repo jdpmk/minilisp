@@ -32,12 +32,6 @@ instance Alternative Parser where
   Parser l <|> Parser r = Parser $ \input ->
     l input <|> r input
 
-anyChar :: Parser Char
-anyChar = Parser $ \input ->
-  case input of
-    (c:cs) -> Just (c, cs)
-    ""     -> Nothing
-
 satisfying :: Parser a -> (a -> Bool) -> Parser a
 satisfying (Parser p) pred = Parser $ \input -> do
   (parsed, rest) <- p input
@@ -48,6 +42,12 @@ failEmpty :: Parser [a] -> Parser [a]
 failEmpty (Parser p) = Parser $ \input -> do
   (parsed, rest) <- p input
   if null parsed then Nothing else Just (parsed, rest)
+
+anyChar :: Parser Char
+anyChar = Parser $ \input ->
+  case input of
+    (c:cs) -> Just (c, cs)
+    ""     -> Nothing
 
 char :: Char -> Parser Char
 char c = anyChar `satisfying` (== c)
@@ -60,6 +60,12 @@ whitespace = many $ anyChar `satisfying` (`elem` " \t\n")
 
 sep :: Parser a -> Parser b -> Parser [b]
 sep delimiter element = (:) <$> element <*> many (delimiter *> element) <|> pure []
+
+lispNil :: Parser Expr
+lispNil = const (Atom Nil) <$> string "nil"
+
+lispT :: Parser Expr
+lispT = const (Atom T) <$> string "t"
 
 lispIdentifier :: Parser Expr
 lispIdentifier = (Atom . Identifier) <$> identifier
@@ -75,12 +81,6 @@ lispString = (Atom . String) <$> (char '"' *> (many $ anyChar `satisfying` ((/=)
 lispInteger :: Parser Expr
 lispInteger = (Atom . Integer . read) <$> failEmpty (many $ anyChar `satisfying` isDigit)
 
-lispNil :: Parser Expr
-lispNil = const (Atom Nil) <$> string "nil"
-
-lispT :: Parser Expr
-lispT = const (Atom T) <$> string "t"
-
 lispKeyword :: String -> Parser Expr
 lispKeyword s = Atom <$> Identifier <$> string s
 
@@ -88,7 +88,7 @@ lispCar    = lispKeyword "car"
 lispCdr    = lispKeyword "cdr"
 lispCons   = lispKeyword "cons"
 lispAtom   = lispKeyword "atom"
-lispEqq    = lispKeyword "eq"
+lispEq     = lispKeyword "eq"
 lispLambda = lispKeyword "lambda"
 lispLabel  = lispKeyword "label"
 lispQuote  = lispKeyword "quote"
@@ -99,14 +99,16 @@ lispKeywords = lispCar
                <|> lispCdr
                <|> lispCons
                <|> lispAtom
-               <|> lispEqq
+               <|> lispEq
                <|> lispLambda
                <|> lispLabel
                <|> lispQuote
                <|> lispCond
 
 lispAtomic :: Parser Expr
-lispAtomic = lispString
+lispAtomic = lispNil
+             <|> lispT
+             <|> lispString
              <|> lispInteger
              <|> lispKeywords
              <|> lispIdentifier
