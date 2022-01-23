@@ -8,7 +8,7 @@ import System.IO
 
 read_ :: IO (String)
 read_ = do
-  putStr "λ > "
+  putStr "λ >> "
   input <- getLine
   return input
 
@@ -21,17 +21,12 @@ eval_ input =
 print_ :: Either String Expr -> IO ()
 print_ result = putStrLn $
   case result of
-    Right expr -> show $ expr
+    Right expr -> show expr
     Left err   -> err
 
 repl :: IO ()
-repl = do
-  input <- read_
-  let result = eval_ input
-  print_ result
-  loop
-    where
-      loop = repl
+repl = read_ >>= (print_ . eval_) >> loop
+  where loop = repl
 
 main :: IO ()
 main = repl
