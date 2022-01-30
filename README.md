@@ -10,5 +10,36 @@ Prerequisites:
 ```sh
 $ git clone https://github.com/jdpmk/minilisp
 $ cd minilisp
-$ ghci Main.hs # To launch into an interactive REPL
+$ ghc -o minilisp Main.hs
+$ ./minilisp
 ```
+
+## Features
+
+- [X] Lisp Primitives (`cons`, `car`, `cdr`, `eq`, `atom`, `quote`, etc.)
+- [X] Anonymous function evaluation
+- [ ] Function definition and evaluation within a context
+- [ ] Arithmetic operations
+- [ ] Better error messages
+
+## Examples
+
+```lisp
+λ >> (cons 'a 'b)
+(a b)
+λ >> (car (cons 'a 'b))
+a
+λ >> (cdr '(a b c))
+(b (c nil))
+λ >> ((lambda (x) x) 'a)
+a
+λ >> ((lambda (x y) (eq x y)) 'a 'b)
+nil
+λ >> ((lambda (x y) (eq x y)) 'a 'a)
+t
+λ >> ((lambda (x y) (cond ((eq x y) "yes") (t "no"))) 'a 'b)
+"no"
+λ >> ((lambda (x y) (cond ((eq x y) "yes") (t "no"))) 'a 'a)
+"yes"
+```
+
