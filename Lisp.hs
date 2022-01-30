@@ -52,7 +52,7 @@ pairlis x y a
 
 assoc :: Expr -> Expr -> Expr
 assoc x a
-  | null' a            == Atom T = error "Symbol is not defined"
+  | null' a            == Atom T = error $ "Symbol: " ++ show x ++ " is not defined"
   | eq (car $ car a) x == Atom T = car a
   | otherwise                    = assoc x (cdr a)
 
