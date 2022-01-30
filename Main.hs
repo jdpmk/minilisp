@@ -6,11 +6,14 @@ import Parser
 import Control.Exception
 import System.IO
 
+readAndFlush :: String -> IO String
+readAndFlush prompt = do
+  putStr prompt
+  hFlush stdout
+  getLine
+
 read_ :: IO (String)
-read_ = do
-  putStr "λ >> "
-  input <- getLine
-  return input
+read_ = readAndFlush "λ >> "
 
 eval_ :: String -> Either String Expr
 eval_ input =
